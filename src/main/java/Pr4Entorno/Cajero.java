@@ -11,113 +11,156 @@ import java.util.ArrayList;
  * @author loren
  */
 public class Cajero {
-    
+
     /** Nombre del cajero. */
-    String n;
+    private String nombre;
     /** Número de tickets emitidos durante la sesión. */
-    int c;
+    private int ticketsEmitidos;
     /** Total facturado (IVA incluido) durante la sesión. */
-    double t;
+    private double totalDia;
     /** Lista de productos pendientes de cobro en el ticket actual. */
-    ArrayList<Producto> ps;
-    
+    private ArrayList<Producto> productos;
+
     /**
-     * Crea un nuevo cajero con el nombre n e inicia el contadorcde tickets y el total facturado a 0
-     * @param n nombre del cajero
+     * Crea un nuevo cajero con el nombre indicado.
+     * Inicializa el contador de tickets y el total facturado a cero.
+     * @param nombreCajero Nombre del cajero.
      */
-    public Cajero(String n) {
-        this.n = n;
-        this.c = 0;
-        this.t = 0;
-        this.ps = new ArrayList<>();
+    public Cajero(String nombreCajero) {
+        this.nombre = nombreCajero;
+        this.ticketsEmitidos = 0;
+        this.totalDia = 0;
+        this.productos = new ArrayList<>();
     }
-    
+
     /**
-     * Sirve para añadir un producto al ticket actual 
-     * @param p es el producto que se quiere añadir
+     * Añade un producto al ticket actual.
+     * @param producto Producto que se desea añadir.
      */
-    public void ANADIRPRODUCTO(Producto p) {
-        ps.add(p);
+    public void añadirProducto(Producto producto) {
+        getProductos().add(producto);
     }
-    
+
     /**
-     * Sirve para eliminar un producto del ticket actual
-     * @param p es el producto que se quiere borrar
+     * Elimina un producto del ticket actual.
+     * @param producto Producto que se desea eliminar.
      */
-    public void eliminarProDUCTO(Producto p) {
-        ps.remove(p);
+    public void eliminarProducto(Producto producto) {
+        getProductos().remove(producto);
     }
-    
+
     /**
-     * Sirve para hacer el cobro del ticket actual
-     * Sirve para calcular el total de todos los tickets, le suma el IVA del 21%
-     * y muestra los tickets de forma detallada. Para terminar, incrementa
-     * el contador de tickets, acumula el total y vacía la lista de productos.
+     * Procesa el cobro del ticket actual.
+     * Calcula el subtotal, aplica el IVA del 21% y muestra el ticket detallado.
+     * Al finalizar, incrementa el contador de tickets, acumula el total
+     * y vacía la lista de productos.
      */
     public void cobrar() {
-        double subt = 0;
-        for (Producto p : ps) {
-            subt = subt + p.calcularImporte();
-        }
-        double iva = subt * 0.21;
-        double tot = subt + iva;
+        double subtotal = calcularSubtotal();
+        double iva = calcularIva(subtotal);
+        double total = subtotal + iva;
 
+        imprimirTicket(subtotal, iva, total);
+        registrarVenta(total);
+    }
+
+    private void registrarVenta(double total) {
+        setTicketsEmitidos(getTicketsEmitidos() + 1);
+        setTotalDia(getTotalDia() + total);
+        getProductos().clear();
+    }
+
+    private void imprimirTicket(double subtotal, double iva, double total) {
         System.out.println("===== TICKET =====");
-        System.out.println("Cajero: " + n);
-        for (Producto p : ps) {
+        System.out.println("Cajero: " + getNombre());
+        for (Producto p : getProductos()) {
             System.out.println(p.getNombre() + " x" + p.getCantidad()
                     + " = " + String.format("%.2f", p.calcularImporte()) + " EUR");
         }
         System.out.println("------------------");
-        System.out.println("Subtotal: " + String.format("%.2f", subt) + " EUR");
+        System.out.println("Subtotal: " + String.format("%.2f", subtotal) + " EUR");
         System.out.println("IVA (21%): " + String.format("%.2f", iva) + " EUR");
-        System.out.println("TOTAL: " + String.format("%.2f", tot) + " EUR");
+        System.out.println("TOTAL: " + String.format("%.2f", total) + " EUR");
         System.out.println("==================");
-
-        c = c + 1;
-        t = t + tot;
-        ps.clear();
     }
-    
+
+    private double calcularSubtotal() {
+        double subtotal = 0;
+        for (Producto p : getProductos()) {
+            subtotal = subtotal + p.calcularImporte();
+        }
+        return subtotal;
+    }
+
+    private double calcularIva(double subtotal) {
+        return subtotal * IVA;
+    }
+
+    private static final double IVA = 0.21;
+
     /**
-     * Sirve para mostrar por consola el resumen de los tickets emitidos al hacer
-     * el cierre de caja.
-     * Muestra el nombre del cajero, el numero de tickets emitidos, el total
-     * facturado sin IVA, el total facturado SOLO de IVA a partir del total facturado
+     * Muestra por consola el resumen de cierre de caja.
+     * Incluye el nombre del cajero, el número de tickets emitidos,
+     * el total facturado con IVA y el IVA recaudado.
      */
     public void cierreCaja() {
-        double ivaRec = t - (t / (1 + 0.21));
+        double ivaRec = getTotalDia() - (getTotalDia() / (1 + IVA));
 
         System.out.println("===== CIERRE DE CAJA =====");
-        System.out.println("Cajero: " + n);
+        System.out.println("Cajero: " + getNombre());
         System.out.println("--------------------------");
-        System.out.println("Tickets emitidos: " + c);
-        System.out.println("Total facturado:  " + String.format("%.2f", t) + " EUR");
+        System.out.println("Tickets emitidos: " + getTicketsEmitidos());
+        System.out.println("Total facturado:  " + String.format("%.2f", getTotalDia()) + " EUR");
         System.out.println("IVA recaudado:    " + String.format("%.2f", ivaRec) + " EUR");
         System.out.println("==========================");
     }
-    
+
     /**
-     * Sirve para indicar i el ticket esta lleno o vacio
-     * @return {@code true} si la lista de productos está vacía, {@code false} si tiene productos.
+     * Indica si el ticket actual no tiene ningún producto.
+     * @return {@code true} si la lista de productos está vacía; {@code false} en caso contrario.
      */
     public boolean ticketVacio() {
-        return ps.isEmpty();
+        return getProductos().isEmpty();
     }
-    
+
     /**
-     * 
-     * @return el total de tickets emitidos
+     * @return el total de tickets emitidos durante la sesión.
      */
     public int getTicketsEmitidos() {
-        return c;
+        return ticketsEmitidos;
     }
-    
+
     /**
-     * 
-     * @return el total facturado con IVA durante la sesion
+     * @return el total facturado con IVA durante la sesión.
      */
     public double getTotalDia() {
-        return t;
+        return totalDia;
+    }
+
+    /**
+     * @return el nombre del cajero.
+     */
+    private String getNombre() {
+        return nombre;
+    }
+
+    private void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    private void setTicketsEmitidos(int ticketsEmitidos) {
+        this.ticketsEmitidos = ticketsEmitidos;
+    }
+
+    private void setTotalDia(double totalDia) {
+        this.totalDia = totalDia;
+    }
+
+    private ArrayList<Producto> getProductos() {
+        return productos;
+    }
+
+    private void setProductos(ArrayList<Producto> productos) {
+        this.productos = productos;
     }
 }
